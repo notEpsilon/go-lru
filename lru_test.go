@@ -61,3 +61,18 @@ func TestLRUCache(t *testing.T) {
 		t.Errorf("expected `val` to be %q but got %q", "yes", val)
 	}
 }
+
+func TestEviction(t *testing.T) {
+	cache, err := lru.New[int, any](128)
+	if err != nil {
+		t.Errorf("expected `err` to be <nil> error but got %q", err.Error())
+	}
+
+	for i := 0; i < 256; i++ {
+		cache.Set(i, nil)
+	}
+
+	if cache.Size() != 128 {
+		t.Errorf("expected cache size to be %d but got %d", 128, cache.Size())
+	}
+}

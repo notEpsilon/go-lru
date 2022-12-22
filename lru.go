@@ -59,7 +59,6 @@ func (c *LRUCache[K, V]) Set(key K, value V) {
 		toEvict := c.order.Back()
 		delete(c.store, toEvict.Value.key)
 		c.order.Remove(toEvict)
-		c.mu.Unlock()
 	}
 
 	c.store[key] = c.order.PushFront(&entry[K, V]{key: key, value: value})
@@ -82,4 +81,18 @@ func (c *LRUCache[K, V]) Peek(key K) (V, error) {
 	}
 	c.mu.Unlock()
 	return *new(V), keyNotFound
+}
+
+func (c *LRUCache[K, V]) Size() int {
+	c.mu.Lock()
+	size := len(c.store)
+	c.mu.Unlock()
+	return size
+}
+
+func (c *LRUCache[K, V]) Capacity() int {
+	c.mu.Lock()
+	capacity := c.cap
+	c.mu.Unlock()
+	return capacity
 }
