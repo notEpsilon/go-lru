@@ -8,7 +8,7 @@ go get github.com/notEpsilon/go-lru
 
 ## Usage
 using the cache is very simple
-```
+```go
 cache := lru.New[int, string](2) // give capacity
 
 cache.Put(1, "fish")
