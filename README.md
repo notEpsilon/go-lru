@@ -1,5 +1,5 @@
 # go-lru
-Simple generic Go LRU cache implementation
+Simple thread-safe generic Go LRU cache implementation
 
 ## Installation
 ```
