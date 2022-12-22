@@ -3,6 +3,7 @@ package lru
 import (
 	"errors"
 	"github.com/notEpsilon/go-lru/list"
+	"sync"
 )
 
 var (
@@ -16,6 +17,7 @@ type entry[K comparable, V any] struct {
 }
 
 type LRUCache[K comparable, V any] struct {
+	mu    sync.Mutex
 	store map[K]*list.Element[*entry[K, V]]
 	order *list.List[*entry[K, V]]
 	cap   int
@@ -34,17 +36,22 @@ func New[K comparable, V any](capacity int) (*LRUCache[K, V], error) {
 }
 
 func (c *LRUCache[K, V]) Get(key K) (V, error) {
+	c.mu.Lock()
 	if en, ok := c.store[key]; ok {
 		c.order.MoveToFront(en)
+		c.mu.Unlock()
 		return en.Value.value, nil
 	}
+	c.mu.Unlock()
 	return *new(V), keyNotFound
 }
 
 func (c *LRUCache[K, V]) Set(key K, value V) {
+	c.mu.Lock()
 	if en, ok := c.store[key]; ok {
 		en.Value.value = value
 		c.order.MoveToFront(en)
+		c.mu.Unlock()
 		return
 	}
 
@@ -52,19 +59,27 @@ func (c *LRUCache[K, V]) Set(key K, value V) {
 		toEvict := c.order.Back()
 		delete(c.store, toEvict.Value.key)
 		c.order.Remove(toEvict)
+		c.mu.Unlock()
 	}
 
 	c.store[key] = c.order.PushFront(&entry[K, V]{key: key, value: value})
+	c.mu.Unlock()
 }
 
 func (c *LRUCache[K, V]) Contains(key K) bool {
+	c.mu.Lock()
 	_, ok := c.store[key]
+	c.mu.Unlock()
 	return ok
 }
 
 func (c *LRUCache[K, V]) Peek(key K) (V, error) {
+	c.mu.Lock()
 	if en, ok := c.store[key]; ok {
-		return en.Value.value, nil
+		val := en.Value.value
+		c.mu.Unlock()
+		return val, nil
 	}
+	c.mu.Unlock()
 	return *new(V), keyNotFound
 }
