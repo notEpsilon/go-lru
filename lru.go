@@ -65,6 +65,15 @@ func (c *LRUCache[K, V]) Set(key K, value V) {
 	c.mu.Unlock()
 }
 
+func (c *LRUCache[K, V]) Remove(key K) {
+	c.mu.Lock()
+	if en, ok := c.store[key]; ok {
+		delete(c.store, en.Value.key)
+		c.order.Remove(en)
+	}
+	c.mu.Unlock()
+}
+
 func (c *LRUCache[K, V]) Contains(key K) bool {
 	c.mu.Lock()
 	_, ok := c.store[key]
