@@ -17,7 +17,7 @@ type entry[K comparable, V any] struct {
 }
 
 type LRUCache[K comparable, V any] struct {
-	mu    sync.Mutex
+	lock    sync.RWMutex
 	store map[K]*list.Element[*entry[K, V]]
 	order *list.List[*entry[K, V]]
 	cap   int
@@ -36,22 +36,22 @@ func New[K comparable, V any](capacity int) (*LRUCache[K, V], error) {
 }
 
 func (c *LRUCache[K, V]) Get(key K) (V, error) {
-	c.mu.Lock()
+	c.lock.RLock()
 	if en, ok := c.store[key]; ok {
 		c.order.MoveToFront(en)
-		c.mu.Unlock()
+		c.lock.RUnlock()
 		return en.Value.value, nil
 	}
-	c.mu.Unlock()
+	c.lock.RUnlock()
 	return *new(V), keyNotFound
 }
 
 func (c *LRUCache[K, V]) Set(key K, value V) {
-	c.mu.Lock()
+	c.lock.Lock()
 	if en, ok := c.store[key]; ok {
 		en.Value.value = value
 		c.order.MoveToFront(en)
-		c.mu.Unlock()
+		c.lock.Unlock()
 		return
 	}
 
@@ -62,46 +62,46 @@ func (c *LRUCache[K, V]) Set(key K, value V) {
 	}
 
 	c.store[key] = c.order.PushFront(&entry[K, V]{key: key, value: value})
-	c.mu.Unlock()
+	c.lock.Unlock()
 }
 
 func (c *LRUCache[K, V]) Remove(key K) {
-	c.mu.Lock()
+	c.lock.Lock()
 	if en, ok := c.store[key]; ok {
 		delete(c.store, en.Value.key)
 		c.order.Remove(en)
 	}
-	c.mu.Unlock()
+	c.lock.Unlock()
 }
 
 func (c *LRUCache[K, V]) Contains(key K) bool {
-	c.mu.Lock()
+	c.lock.RLock()
 	_, ok := c.store[key]
-	c.mu.Unlock()
+	c.lock.RUnlock()
 	return ok
 }
 
 func (c *LRUCache[K, V]) Peek(key K) (V, error) {
-	c.mu.Lock()
+	c.lock.RLock()
 	if en, ok := c.store[key]; ok {
 		val := en.Value.value
-		c.mu.Unlock()
+		c.lock.RUnlock()
 		return val, nil
 	}
-	c.mu.Unlock()
+	c.lock.RUnlock()
 	return *new(V), keyNotFound
 }
 
 func (c *LRUCache[K, V]) Size() int {
-	c.mu.Lock()
+	c.lock.RLock()
 	size := len(c.store)
-	c.mu.Unlock()
+	c.lock.RUnlock()
 	return size
 }
 
 func (c *LRUCache[K, V]) Capacity() int {
-	c.mu.Lock()
+	c.lock.RLock()
 	capacity := c.cap
-	c.mu.Unlock()
+	c.lock.RUnlock()
 	return capacity
 }
